@@ -188,8 +188,7 @@
 
   <div class="container">
     <div class="logo-container">
-      <!-- WITH THIS -->
-<img src="logo.png" alt="Office of the Registrar Seal" class="logo">
+      <img src="logo.png" alt="Office of the Registrar Seal" class="logo">
     </div>
     
     <div class="school-title">Office of the Registrar</div>
@@ -202,7 +201,7 @@
 
     <div class="input-group">
       <label class="input-label" for="lastName">Last Name</label>
-      <input type="text" id="lastName" class="input-field" placeholder="e.g. Catacutan" autocomplete="off">
+      <input type="text" id="lastName" class="input-field" placeholder="e.g. Bilar" autocomplete="off">
     </div>
 
     <button id="verifyBtn" class="btn-verify" onclick="verifyRecord()">Verify Authenticity</button>
@@ -215,6 +214,7 @@
   </div>
 
   <script>
+    // YOUR ACTIVE APPS SCRIPT WEB APP URL
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzbYw-K8GexTxmKS3HivXMZ3WHqV3xwrC8vQZ0JdnwZXr_0Gn8oIGZL3xzS8EU6jhOQ/exec";
 
     function verifyRecord() {
@@ -233,13 +233,17 @@
       btn.innerHTML = "Verifying...";
       resultDiv.style.display = 'none';
 
-      // Normalize ñ to n so manual input with or without ñ works uniformly
+      // Normalize any ñ/Ñ to n
       const normalizedLastName = lastName.replace(/ñ/gi, 'n');
-
       const fetchUrl = `${SCRIPT_URL}?c=${encodeURIComponent(code)}&l=${encodeURIComponent(normalizedLastName)}`;
 
       fetch(fetchUrl)
-        .then(res => res.json())
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('Network response error');
+          }
+          return response.json();
+        })
         .then(res => {
           btn.disabled = false;
           btn.innerHTML = "Verify Authenticity";
@@ -267,17 +271,15 @@
         });
     }
 
-    // Auto-detect URL query params on page load
+    // Auto-detect and trigger verification on QR scan
     window.addEventListener('DOMContentLoaded', () => {
       const urlParams = new URLSearchParams(window.location.search);
-      // Reads 'c' or 'code', and 'l' or 'lastName'
       const c = urlParams.get('c') || urlParams.get('code');
       const ln = urlParams.get('l') || urlParams.get('lastName');
 
       if (c) document.getElementById('code').value = c;
       if (ln) document.getElementById('lastName').value = ln;
 
-      // If both parameters exist, verify automatically
       if (c && ln) {
         verifyRecord();
       }
