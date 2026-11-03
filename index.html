@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>LCC Bais - Document Verification</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center; 
+      justify-content: center; 
+      background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+      padding: 16px;
+    }
+
+    .container { 
+      background: #ffffff; 
+      padding: 32px 24px; 
+      border-radius: 16px; 
+      box-shadow: 0 10px 30px rgba(11, 99, 197, 0.12); 
+      width: 100%;
+      max-width: 420px; 
+      text-align: center;
+      border: 1px solid #e2e8f0;
+    }
+
+    .logo-container {
+      margin-bottom: 14px;
+    }
+
+    .logo {
+      width: 96px;
+      height: 96px;
+      object-fit: contain;
+      margin: 0 auto;
+      display: block;
+    }
+
+    .school-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #1e3a8a;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+
+    h2 {
+      color: #0b63c5;
+      margin-bottom: 20px;
+      font-size: 1.45rem;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+    }
+
+    .input-group {
+      text-align: left;
+      margin-bottom: 12px;
+    }
+
+    .input-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: #475569;
+      text-transform: uppercase;
+      margin-left: 2px;
+      margin-bottom: 4px;
+      display: block;
+    }
+
+    .input-field { 
+      padding: 13px 14px; 
+      width: 100%; 
+      border: 1.5px solid #cbd5e1; 
+      border-radius: 8px; 
+      font-size: 16px; 
+      outline: none;
+      background: #ffffff;
+      color: #0f172a;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .input-field:focus {
+      border-color: #0b63c5;
+      box-shadow: 0 0 0 3px rgba(11, 99, 197, 0.15);
+    }
+
+    .btn-verify { 
+      padding: 14px; 
+      cursor: pointer; 
+      background: #0b63c5; 
+      color: #ffffff; 
+      border: none; 
+      border-radius: 8px; 
+      font-size: 15px;
+      font-weight: 700; 
+      width: 100%; 
+      margin-top: 10px;
+      transition: background-color 0.2s, transform 0.1s;
+    }
+
+    .btn-verify:active {
+      transform: scale(0.99);
+    }
+
+    .btn-verify:hover { 
+      background: #084b96; 
+    }
+
+    .btn-verify:disabled { 
+      background: #94a3b8; 
+      cursor: not-allowed; 
+    }
+
+    #result { 
+      margin-top: 20px; 
+      padding: 16px; 
+      border-radius: 10px; 
+      display: none; 
+      text-align: left; 
+      background-color: #f8fafc;
+      border: 1px solid #e2e8f0;
+      animation: fadeIn 0.25s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .success-header { 
+      color: #15803d; 
+      font-weight: 700; 
+      font-size: 12.5px;
+      letter-spacing: 0.3px;
+      margin-bottom: 10px; 
+      border-bottom: 1.5px solid #bbf7d0; 
+      padding-bottom: 6px; 
+    }
+
+    .res-label { 
+      font-weight: 700; 
+      color: #64748b; 
+      font-size: 11px; 
+      text-transform: uppercase; 
+      margin-top: 8px; 
+      display: block; 
+    }
+
+    .res-value { 
+      color: #0f172a; 
+      font-size: 14.5px; 
+      font-weight: 600;
+      display: block; 
+      margin-top: 2px;
+    }
+
+    .error-msg { 
+      color: #dc2626; 
+      font-weight: 600; 
+      text-align: center; 
+      font-size: 13.5px;
+      line-height: 1.4;
+      margin: 4px 0;
+    }
+
+    .footer-note {
+      margin-top: 24px;
+      padding-top: 14px;
+      border-top: 1px dashed #cbd5e1;
+      color: #64748b;
+      font-size: 11px;
+      line-height: 1.45;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <div class="logo-container">
+      <img src="https://i.ibb.co/v6dsmytb/download.png" alt="School Seal" class="logo" onerror="this.style.display='none'">
+    </div>
+    
+    <div class="school-title">Office of the Registrar</div>
+    <h2>Document Verification</h2>
+    
+    <div class="input-group">
+      <label class="input-label" for="code">Verification Code</label>
+      <input type="text" id="code" class="input-field" placeholder="e.g. D5KPX" autocomplete="off" autocapitalize="characters">
+    </div>
+
+    <div class="input-group">
+      <label class="input-label" for="lastName">Last Name</label>
+      <input type="text" id="lastName" class="input-field" placeholder="e.g. Catacutan" autocomplete="off">
+    </div>
+
+    <button id="verifyBtn" class="btn-verify" onclick="verifyRecord()">Verify Authenticity</button>
+
+    <div id="result"></div>
+
+    <div class="footer-note">
+      This online verification checks credentials issued by the Office of the Registrar. For assistance, contact the Registrar's Office directly.
+    </div>
+  </div>
+
+  <script>
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzbYw-K8GexTxmKS3HivXMZ3WHqV3xwrC8vQZ0JdnwZXr_0Gn8oIGZL3xzS8EU6jhOQ/exec";
+
+    function verifyRecord() {
+      const code = document.getElementById('code').value.trim();
+      const lastName = document.getElementById('lastName').value.trim();
+      const btn = document.getElementById('verifyBtn');
+      const resultDiv = document.getElementById('result');
+
+      if (!code || !lastName) {
+        resultDiv.style.display = 'block';
+        resultDiv.innerHTML = '<p class="error-msg">⚠️ Please enter both Verification Code and Last Name.</p>';
+        return;
+      }
+      
+      btn.disabled = true;
+      btn.innerHTML = "Verifying...";
+      resultDiv.style.display = 'none';
+
+      const fetchUrl = `${SCRIPT_URL}?code=${encodeURIComponent(code)}&lastName=${encodeURIComponent(lastName)}`;
+
+      fetch(fetchUrl)
+        .then(res => res.json())
+        .then(res => {
+          btn.disabled = false;
+          btn.innerHTML = "Verify Authenticity";
+          resultDiv.style.display = 'block';
+          
+          if (res.status === "AUTHENTIC") {
+            resultDiv.innerHTML = `
+              <div class="success-header">✓ OFFICIAL RECORD FOUND</div>
+              <span class="res-label">Full Name</span>
+              <span class="res-value">${res.fullName}</span>
+              <span class="res-label">Document Type</span>
+              <span class="res-value">${res.docType}</span>
+              <span class="res-label">Issued Date</span>
+              <span class="res-value">${res.issueDate}</span>
+            `;
+          } else {
+            resultDiv.innerHTML = '<p class="error-msg">❌ No matching record found.<br><small style="color:#64748b; font-weight:normal;">Please check your verification code and last name.</small></p>';
+          }
+        })
+        .catch(err => {
+          btn.disabled = false;
+          btn.innerHTML = "Verify Authenticity";
+          resultDiv.style.display = 'block';
+          resultDiv.innerHTML = '<p class="error-msg">Connection Error. Please check your network and try again.</p>';
+        });
+    }
+
+    // Auto-detect URL query params on page load
+    window.addEventListener('DOMContentLoaded', () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const c = urlParams.get('code');
+      const ln = urlParams.get('lastName');
+
+      if (c) document.getElementById('code').value = c;
+      if (ln) document.getElementById('lastName').value = ln;
+
+      // If both parameters exist, verify automatically
+      if (c && ln) {
+        verifyRecord();
+      }
+    });
+  </script>
+</body>
+</html>
