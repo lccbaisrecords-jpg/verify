@@ -196,12 +196,12 @@
     
     <div class="input-group">
       <label class="input-label" for="code">Verification Code</label>
-      <input type="text" id="code" class="input-field" placeholder="e.g. D5KPX" autocomplete="off" autocapitalize="characters">
+      <input type="text" id="code" class="input-field" placeholder="e.g. 6UWQ5" autocomplete="off" autocapitalize="characters">
     </div>
 
     <div class="input-group">
       <label class="input-label" for="lastName">Last Name</label>
-      <input type="text" id="lastName" class="input-field" placeholder="e.g. Bilar" autocomplete="off">
+      <input type="text" id="lastName" class="input-field" placeholder="e.g. Saguban" autocomplete="off">
     </div>
 
     <button id="verifyBtn" class="btn-verify" onclick="verifyRecord()">Verify Authenticity</button>
@@ -214,8 +214,35 @@
   </div>
 
   <script>
-    // YOUR ACTIVE APPS SCRIPT WEB APP URL
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzbYw-K8GexTxmKS3HivXMZ3WHqV3xwrC8vQZ0JdnwZXr_0Gn8oIGZL3xzS8EU6jhOQ/exec";
+
+    // JSONP Handler callback function
+    window.handleVerificationResponse = function(res) {
+      const btn = document.getElementById('verifyBtn');
+      const resultDiv = document.getElementById('result');
+      
+      btn.disabled = false;
+      btn.innerHTML = "Verify Authenticity";
+      resultDiv.style.display = 'block';
+
+      // Clean up injected script tag
+      const existingScript = document.getElementById('jsonpScript');
+      if (existingScript) existingScript.remove();
+
+      if (res.status === "AUTHENTIC") {
+        resultDiv.innerHTML = `
+          <div class="success-header">✓ OFFICIAL RECORD FOUND</div>
+          <span class="res-label">Full Name</span>
+          <span class="res-value">${res.fullName}</span>
+          <span class="res-label">Document Type</span>
+          <span class="res-value">${res.docType}</span>
+          <span class="res-label">Issued Date</span>
+          <span class="res-value">${res.issueDate}</span>
+        `;
+      } else {
+        resultDiv.innerHTML = '<p class="error-msg">❌ No matching record found.<br><small style="color:#64748b; font-weight:normal;">Please check your verification code and last name.</small></p>';
+      }
+    };
 
     function verifyRecord() {
       const code = document.getElementById('code').value.trim();
@@ -233,45 +260,28 @@
       btn.innerHTML = "Verifying...";
       resultDiv.style.display = 'none';
 
-      // Normalize any ñ/Ñ to n
+      // Normalize ñ to n
       const normalizedLastName = lastName.replace(/ñ/gi, 'n');
-      const fetchUrl = `${SCRIPT_URL}?c=${encodeURIComponent(code)}&l=${encodeURIComponent(normalizedLastName)}`;
 
-      fetch(fetchUrl)
-        .then(response => {
-          if (!response.ok) {
-            throw new Error('Network response error');
-          }
-          return response.json();
-        })
-        .then(res => {
-          btn.disabled = false;
-          btn.innerHTML = "Verify Authenticity";
-          resultDiv.style.display = 'block';
-          
-          if (res.status === "AUTHENTIC") {
-            resultDiv.innerHTML = `
-              <div class="success-header">✓ OFFICIAL RECORD FOUND</div>
-              <span class="res-label">Full Name</span>
-              <span class="res-value">${res.fullName}</span>
-              <span class="res-label">Document Type</span>
-              <span class="res-value">${res.docType}</span>
-              <span class="res-label">Issued Date</span>
-              <span class="res-value">${res.issueDate}</span>
-            `;
-          } else {
-            resultDiv.innerHTML = '<p class="error-msg">❌ No matching record found.<br><small style="color:#64748b; font-weight:normal;">Please check your verification code and last name.</small></p>';
-          }
-        })
-        .catch(err => {
-          btn.disabled = false;
-          btn.innerHTML = "Verify Authenticity";
-          resultDiv.style.display = 'block';
-          resultDiv.innerHTML = '<p class="error-msg">Connection Error. Please check your network and try again.</p>';
-        });
+      // Create JSONP call to bypass CORS blocks entirely
+      const existingScript = document.getElementById('jsonpScript');
+      if (existingScript) existingScript.remove();
+
+      const script = document.createElement('script');
+      script.id = 'jsonpScript';
+      script.src = `${SCRIPT_URL}?c=${encodeURIComponent(code)}&l=${encodeURIComponent(normalizedLastName)}&callback=handleVerificationResponse`;
+      
+      script.onerror = function() {
+        btn.disabled = false;
+        btn.innerHTML = "Verify Authenticity";
+        resultDiv.style.display = 'block';
+        resultDiv.innerHTML = '<p class="error-msg">Connection Error. Please check your network and try again.</p>';
+      };
+
+      document.body.appendChild(script);
     }
 
-    // Auto-detect and trigger verification on QR scan
+    // Auto-detect and trigger verification on scan
     window.addEventListener('DOMContentLoaded', () => {
       const urlParams = new URLSearchParams(window.location.search);
       const c = urlParams.get('c') || urlParams.get('code');
