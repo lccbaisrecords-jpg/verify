@@ -264,15 +264,17 @@
         });
     }
 
-    // Auto-detect and run query parameters on page load
+    // Auto-detect URL query params on page load
     window.addEventListener('DOMContentLoaded', () => {
       const urlParams = new URLSearchParams(window.location.search);
-      const c = urlParams.get('code');
-      const ln = urlParams.get('lastName');
+      // Reads 'c' or 'code', and 'l' or 'lastName'
+      const c = urlParams.get('c') || urlParams.get('code');
+      const ln = urlParams.get('l') || urlParams.get('lastName');
 
       if (c) document.getElementById('code').value = c;
       if (ln) document.getElementById('lastName').value = ln;
 
+      // If both parameters exist, verify automatically
       if (c && ln) {
         verifyRecord();
       }
