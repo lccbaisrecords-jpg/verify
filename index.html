@@ -219,7 +219,7 @@
 
     function verifyRecord() {
       const code = document.getElementById('code').value.trim();
-      const lastName = document.getElementById('lastName').value.trim();
+      let lastName = document.getElementById('lastName').value.trim();
       const btn = document.getElementById('verifyBtn');
       const resultDiv = document.getElementById('result');
 
@@ -233,7 +233,10 @@
       btn.innerHTML = "Verifying...";
       resultDiv.style.display = 'none';
 
-      const fetchUrl = `${SCRIPT_URL}?code=${encodeURIComponent(code)}&lastName=${encodeURIComponent(lastName)}`;
+      // Normalize ñ to n so manual input with or without ñ works uniformly
+      const normalizedLastName = lastName.replace(/ñ/gi, 'n');
+
+      const fetchUrl = `${SCRIPT_URL}?c=${encodeURIComponent(code)}&l=${encodeURIComponent(normalizedLastName)}`;
 
       fetch(fetchUrl)
         .then(res => res.json())
