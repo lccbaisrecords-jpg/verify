@@ -34,12 +34,12 @@
     }
 
     .logo-container {
-      margin-bottom: 14px;
+      margin-bottom: 12px;
     }
 
     .logo {
-      width: 96px;
-      height: 96px;
+      width: 105px;
+      height: 105px;
       object-fit: contain;
       margin: 0 auto;
       display: block;
@@ -188,7 +188,8 @@
 
   <div class="container">
     <div class="logo-container">
-      <img src="https://i.ibb.co/v6dsmytb/download.png" alt="School Seal" class="logo" onerror="this.style.display='none'">
+      <!-- PASTE YOUR FULL BASE64 STRING INTO THE SRC ATTRIBUTE BELOW -->
+      <img src="PASTE_YOUR_BASE64_STRING_HERE" alt="School Seal" class="logo">
     </div>
     
     <div class="school-title">Office of the Registrar</div>
@@ -263,7 +264,7 @@
         });
     }
 
-    // Auto-detect URL query params on page load
+    // Auto-detect and run query parameters on page load
     window.addEventListener('DOMContentLoaded', () => {
       const urlParams = new URLSearchParams(window.location.search);
       const c = urlParams.get('code');
@@ -272,7 +273,6 @@
       if (c) document.getElementById('code').value = c;
       if (ln) document.getElementById('lastName').value = ln;
 
-      // If both parameters exist, verify automatically
       if (c && ln) {
         verifyRecord();
       }
