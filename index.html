@@ -196,12 +196,14 @@
     
     <div class="input-group">
       <label class="input-label" for="code">Verification Code</label>
-      <input type="text" id="code" class="input-field" placeholder="e.g. 6UWQ5" autocomplete="off" autocapitalize="characters">
+      <!-- Generic non-real placeholder -->
+      <input type="text" id="code" class="input-field" placeholder="e.g. 123ABC" autocomplete="off" autocapitalize="characters">
     </div>
 
     <div class="input-group">
       <label class="input-label" for="lastName">Last Name</label>
-      <input type="text" id="lastName" class="input-field" placeholder="e.g. Saguban" autocomplete="off">
+      <!-- Generic non-real placeholder -->
+      <input type="text" id="lastName" class="input-field" placeholder="e.g. DELA CRUZ" autocomplete="off">
     </div>
 
     <button id="verifyBtn" class="btn-verify" onclick="verifyRecord()">Verify Authenticity</button>
@@ -214,10 +216,9 @@
   </div>
 
   <script>
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzbYw-K8GexTxmKS3HivXMZ3WHqV3xwrC8vQZ0JdnwZXr_0Gn8oIGZL3xzS8EU6jhOQ/exec";
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwe32N6TeLR9sdqtUH-TZXVKC0crh5P4S9sbHf_MM0rAtEkQGyoXYm0_0n8KKP0x8Cq/exec";
 
-    // JSONP Handler callback function
-    window.handleVerificationResponse = function(res) {
+    function renderResult(res) {
       const btn = document.getElementById('verifyBtn');
       const resultDiv = document.getElementById('result');
       
@@ -225,11 +226,7 @@
       btn.innerHTML = "Verify Authenticity";
       resultDiv.style.display = 'block';
 
-      // Clean up injected script tag
-      const existingScript = document.getElementById('jsonpScript');
-      if (existingScript) existingScript.remove();
-
-      if (res.status === "AUTHENTIC") {
+      if (res && res.status === "AUTHENTIC") {
         resultDiv.innerHTML = `
           <div class="success-header">✓ OFFICIAL RECORD FOUND</div>
           <span class="res-label">Full Name</span>
@@ -242,11 +239,18 @@
       } else {
         resultDiv.innerHTML = '<p class="error-msg">❌ No matching record found.<br><small style="color:#64748b; font-weight:normal;">Please check your verification code and last name.</small></p>';
       }
+    }
+
+    // JSONP callback fallback handler
+    window.handleJsonpResponse = function(data) {
+      const oldScript = document.getElementById('jsonp_runner');
+      if (oldScript) oldScript.remove();
+      renderResult(data);
     };
 
     function verifyRecord() {
       const code = document.getElementById('code').value.trim();
-      let lastName = document.getElementById('lastName').value.trim();
+      const lastName = document.getElementById('lastName').value.trim();
       const btn = document.getElementById('verifyBtn');
       const resultDiv = document.getElementById('result');
 
@@ -260,28 +264,39 @@
       btn.innerHTML = "Verifying...";
       resultDiv.style.display = 'none';
 
-      // Normalize ñ to n
       const normalizedLastName = lastName.replace(/ñ/gi, 'n');
+      const queryParams = `c=${encodeURIComponent(code)}&l=${encodeURIComponent(normalizedLastName)}`;
 
-      // Create JSONP call to bypass CORS blocks entirely
-      const existingScript = document.getElementById('jsonpScript');
-      if (existingScript) existingScript.remove();
+      // Attempt 1: Fetch API
+      fetch(`${SCRIPT_URL}?${queryParams}`)
+        .then(response => {
+          if (!response.ok) throw new Error("Fetch failed");
+          return response.json();
+        })
+        .then(data => {
+          renderResult(data);
+        })
+        .catch(() => {
+          // Attempt 2: Seamless JSONP Fallback if Fetch is blocked by CORS/Redirect
+          const oldScript = document.getElementById('jsonp_runner');
+          if (oldScript) oldScript.remove();
 
-      const script = document.createElement('script');
-      script.id = 'jsonpScript';
-      script.src = `${SCRIPT_URL}?c=${encodeURIComponent(code)}&l=${encodeURIComponent(normalizedLastName)}&callback=handleVerificationResponse`;
-      
-      script.onerror = function() {
-        btn.disabled = false;
-        btn.innerHTML = "Verify Authenticity";
-        resultDiv.style.display = 'block';
-        resultDiv.innerHTML = '<p class="error-msg">Connection Error. Please check your network and try again.</p>';
-      };
+          const script = document.createElement('script');
+          script.id = 'jsonp_runner';
+          script.src = `${SCRIPT_URL}?${queryParams}&callback=handleJsonpResponse`;
+          
+          script.onerror = function() {
+            btn.disabled = false;
+            btn.innerHTML = "Verify Authenticity";
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = '<p class="error-msg">Connection Error. Please check your network and try again.</p>';
+          };
 
-      document.body.appendChild(script);
+          document.body.appendChild(script);
+        });
     }
 
-    // Auto-detect and trigger verification on scan
+    // Auto-detect and run when scanned via QR code
     window.addEventListener('DOMContentLoaded', () => {
       const urlParams = new URLSearchParams(window.location.search);
       const c = urlParams.get('c') || urlParams.get('code');
