@@ -196,13 +196,11 @@
     
     <div class="input-group">
       <label class="input-label" for="code">Verification Code</label>
-      <!-- Generic non-real placeholder -->
       <input type="text" id="code" class="input-field" placeholder="e.g. 123ABC" autocomplete="off" autocapitalize="characters">
     </div>
 
     <div class="input-group">
       <label class="input-label" for="lastName">Last Name</label>
-      <!-- Generic non-real placeholder -->
       <input type="text" id="lastName" class="input-field" placeholder="e.g. DELA CRUZ" autocomplete="off">
     </div>
 
@@ -216,37 +214,20 @@
   </div>
 
   <script>
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwe32N6TeLR9sdqtUH-TZXVKC0crh5P4S9sbHf_MM0rAtEkQGyoXYm0_0n8KKP0x8Cq/exec";
+    const SPREADSHEET_ID = "17x7Um-uA2ArjKk0radTyfjVA0XJPwFeP4vEafsYNqFI";
+    const SHEET_TAB_NAME = "DOCVERIFY";
 
-    function renderResult(res) {
-      const btn = document.getElementById('verifyBtn');
-      const resultDiv = document.getElementById('result');
-      
-      btn.disabled = false;
-      btn.innerHTML = "Verify Authenticity";
-      resultDiv.style.display = 'block';
+    // Direct Google Sheets query endpoint (bypasses Apps Script, 302 redirects, and CORS blocks)
+    const GSHEET_URL = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(SHEET_TAB_NAME)}`;
 
-      if (res && res.status === "AUTHENTIC") {
-        resultDiv.innerHTML = `
-          <div class="success-header">✓ OFFICIAL RECORD FOUND</div>
-          <span class="res-label">Full Name</span>
-          <span class="res-value">${res.fullName}</span>
-          <span class="res-label">Document Type</span>
-          <span class="res-value">${res.docType}</span>
-          <span class="res-label">Issued Date</span>
-          <span class="res-value">${res.issueDate}</span>
-        `;
-      } else {
-        resultDiv.innerHTML = '<p class="error-msg">❌ No matching record found.<br><small style="color:#64748b; font-weight:normal;">Please check your verification code and last name.</small></p>';
-      }
+    function cleanString(str) {
+      return (str || "")
+        .toString()
+        .trim()
+        .toLowerCase()
+        .replace(/ñ/gi, 'n')
+        .replace(/\s+/g, '');
     }
-
-    // JSONP callback fallback handler
-    window.handleJsonpResponse = function(data) {
-      const oldScript = document.getElementById('jsonp_runner');
-      if (oldScript) oldScript.remove();
-      renderResult(data);
-    };
 
     function verifyRecord() {
       const code = document.getElementById('code').value.trim();
@@ -264,39 +245,66 @@
       btn.innerHTML = "Verifying...";
       resultDiv.style.display = 'none';
 
-      const normalizedLastName = lastName.replace(/ñ/gi, 'n');
-      const queryParams = `c=${encodeURIComponent(code)}&l=${encodeURIComponent(normalizedLastName)}`;
+      const searchCode = cleanString(code);
+      const searchLastName = cleanString(lastName);
 
-      // Attempt 1: Fetch API
-      fetch(`${SCRIPT_URL}?${queryParams}`)
-        .then(response => {
-          if (!response.ok) throw new Error("Fetch failed");
-          return response.json();
+      fetch(GSHEET_URL)
+        .then(res => {
+          if (!res.ok) throw new Error("Network error loading sheet");
+          return res.text();
         })
-        .then(data => {
-          renderResult(data);
+        .then(rawText => {
+          // Parse Google Visualization JSON wrapper
+          const jsonText = rawText.substring(rawText.indexOf('{'), rawText.lastIndexOf('}') + 1);
+          const data = JSON.parse(jsonText);
+          const rows = data.table.rows;
+
+          let foundRecord = null;
+
+          for (let i = 0; i < rows.length; i++) {
+            const cells = rows[i].c;
+            if (!cells || cells.length < 2) continue;
+
+            const rowCode = cleanString(cells[0] ? (cells[0].f || cells[0].v) : "");
+            const rowLastName = cleanString(cells[1] ? (cells[1].f || cells[1].v) : "");
+
+            if (rowCode === searchCode && rowLastName === searchLastName) {
+              const fullName = cells[2] ? (cells[2].f || cells[2].v || "") : "";
+              const docType = cells[3] ? (cells[3].f || cells[3].v || "") : "";
+              const issueDate = cells[4] ? (cells[4].f || cells[4].v || "") : "";
+
+              foundRecord = { fullName, docType, issueDate };
+              break;
+            }
+          }
+
+          btn.disabled = false;
+          btn.innerHTML = "Verify Authenticity";
+          resultDiv.style.display = 'block';
+
+          if (foundRecord) {
+            resultDiv.innerHTML = `
+              <div class="success-header">✓ OFFICIAL RECORD FOUND</div>
+              <span class="res-label">Full Name</span>
+              <span class="res-value">${foundRecord.fullName}</span>
+              <span class="res-label">Document Type</span>
+              <span class="res-value">${foundRecord.docType}</span>
+              <span class="res-label">Issued Date</span>
+              <span class="res-value">${foundRecord.issueDate}</span>
+            `;
+          } else {
+            resultDiv.innerHTML = '<p class="error-msg">❌ No matching record found.<br><small style="color:#64748b; font-weight:normal;">Please check your verification code and last name.</small></p>';
+          }
         })
-        .catch(() => {
-          // Attempt 2: Seamless JSONP Fallback if Fetch is blocked by CORS/Redirect
-          const oldScript = document.getElementById('jsonp_runner');
-          if (oldScript) oldScript.remove();
-
-          const script = document.createElement('script');
-          script.id = 'jsonp_runner';
-          script.src = `${SCRIPT_URL}?${queryParams}&callback=handleJsonpResponse`;
-          
-          script.onerror = function() {
-            btn.disabled = false;
-            btn.innerHTML = "Verify Authenticity";
-            resultDiv.style.display = 'block';
-            resultDiv.innerHTML = '<p class="error-msg">Connection Error. Please check your network and try again.</p>';
-          };
-
-          document.body.appendChild(script);
+        .catch(err => {
+          btn.disabled = false;
+          btn.innerHTML = "Verify Authenticity";
+          resultDiv.style.display = 'block';
+          resultDiv.innerHTML = '<p class="error-msg">Connection Error. Please verify the spreadsheet share permissions.</p>';
         });
     }
 
-    // Auto-detect and run when scanned via QR code
+    // Auto-detect and trigger verification on scan
     window.addEventListener('DOMContentLoaded', () => {
       const urlParams = new URLSearchParams(window.location.search);
       const c = urlParams.get('c') || urlParams.get('code');
